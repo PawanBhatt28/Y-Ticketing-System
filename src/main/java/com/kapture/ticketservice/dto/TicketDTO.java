@@ -6,9 +6,9 @@ import java.sql.Timestamp;
 
 public class TicketDTO implements Serializable  {
 	private static final long serialVersionUID = 1L;
-	Integer clientId;
-	Integer ticketCode;
-	String title;
+	String clientId;
+	String ticketCode;
+	String title = "general ticket";
 	String status;
 	Timestamp timestamp;
 	int limit;
@@ -17,7 +17,7 @@ public class TicketDTO implements Serializable  {
 	int page;
 	public TicketDTO() {
 	}
-	public TicketDTO(int clientId, int ticketCode, String title, String status, int limit, Timestamp timestamp, Date start, Date end, int page) {
+	public TicketDTO(String clientId, String ticketCode, String title, String status, int limit, Timestamp timestamp, Date start, Date end, int page) {
 		this.clientId = clientId;
 		this.ticketCode = ticketCode;
 		this.title = title;
@@ -28,16 +28,16 @@ public class TicketDTO implements Serializable  {
 		this.endDate = end;
 		this.page = page;
 	}
-	public Integer getClientId() {
+	public String getClientId() {
 		return clientId;
 	}
-	public void setClientId(Integer clientId) {
+	public void setClientId(String clientId) {
 		this.clientId = clientId;
 	}
-	public Integer getTicketCode() {
+	public String getTicketCode() {
 		return ticketCode;
 	}
-	public void setTicketCode(Integer ticketCode) {
+	public void setTicketCode(String ticketCode) {
 		this.ticketCode = ticketCode;
 	}
 	public String getTitle() {

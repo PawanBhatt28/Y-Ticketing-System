@@ -22,6 +22,8 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
+import static java.lang.Integer.valueOf;
+
 @Repository
 public class TicketDAO implements TicketRepository, Constants {
 
@@ -86,7 +88,7 @@ public class TicketDAO implements TicketRepository, Constants {
 		Session session = null;
 		try {
 			session = sessionFactory.openSession();
-			Integer clientId = ticketDTO.getClientId();
+			Integer clientId = valueOf(ticketDTO.getClientId().trim());
 			String status = ticketDTO.getStatus();
 			String title = ticketDTO.getTitle();
 			Date startDate = ticketDTO.getStartDate();

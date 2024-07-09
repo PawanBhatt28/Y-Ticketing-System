@@ -1,13 +1,12 @@
 package com.kapture.ticketservice.controller;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,80 +15,82 @@ import com.kapture.ticketservice.dto.TicketDTO;
 import com.kapture.ticketservice.entity.Ticket;
 import com.kapture.ticketservice.service.KafkaServices;
 import com.kapture.ticketservice.service.TicketService;
-import com.kapture.ticketservice.util.InvalidInputException;
 import com.kapture.ticketservice.util.TicketMapper;
-import com.kapture.ticketservice.validation.RequestValidator;
+import com.kapture.ticketservice.validation.TicketValidator;
 
 @RestController
 public class TicketController {
 
 	private TicketService ticketService;
 	private TicketMapper ticketMapper;
-	private RequestValidator requestValidator;
+	private TicketValidator ticketValidator;
 	private KafkaServices kafkaServices;
-	
-	
 
-	public TicketController(TicketService ticketService, TicketMapper ticketMapper, RequestValidator requestValidator,
+	public TicketController(TicketService ticketService, TicketMapper ticketMapper, TicketValidator requestValidator,
 			KafkaServices kafkaServices) {
 		this.ticketService = ticketService;
 		this.ticketMapper = ticketMapper;
-		this.requestValidator = requestValidator;
+		this.ticketValidator = requestValidator;
 		this.kafkaServices = kafkaServices;
 	}
 
-	@PostMapping("ticket")
-	public ResponseEntity<ResponseDTO> ResposeDTO(@RequestBody TicketDTO ticketDTO) throws InvalidInputException {
-		ResponseDTO responseDTO = requestValidator.postRequestValidator(ticketDTO);
-		if (responseDTO.getStatus().equals("Success")) {
-			Ticket ticket = ticketService.saveTicket(ticketDTO);
-			responseDTO.setObject(ticket);
-		}
-		return new ResponseEntity<>(responseDTO,responseDTO.getHttpStatus());
-	}
-
-	@PostMapping("tickets")
-	public ResponseEntity<ResponseDTO> saveTickets(@RequestBody List<TicketDTO> ticketsDTO) throws InvalidInputException {
-		ResponseDTO responseDTO = new ResponseDTO();
-		for (TicketDTO ticketDTO : ticketsDTO) {
-			responseDTO = requestValidator.postRequestValidator(ticketDTO);
-			if (responseDTO.getStatus().equals("Failure")) {
-				return new ResponseEntity<>(responseDTO,responseDTO.getHttpStatus());
+	@GetMapping("/ticket")
+	public ResponseEntity<ResponseDTO> searchTicket(@RequestBody TicketDTO ticketDTO) {
+		ResponseDTO validationResponse = ticketValidator.fetchTicketValidator(ticketDTO);
+		try {
+			if ("Failed".equals(validationResponse.getStatus())) {
+				return ResponseEntity.badRequest().body(validationResponse);
 			}
-		}
-		List<Ticket> tickets = kafkaServices.produceTicket(ticketsDTO).stream()
-				.map(ticketDTO -> ticketMapper.map(ticketDTO)).collect(Collectors.toList());
-		responseDTO.setObject(tickets);
-		return new ResponseEntity<>(responseDTO,responseDTO.getHttpStatus());
+			List<Ticket> tickets = ticketService.getTickets(ticketDTO);
 
+			ResponseDTO successResponse = new ResponseDTO("Tickets found successfully", "Success", tickets, HttpStatus.OK);
+			return new ResponseEntity<>(successResponse, successResponse.getHttpStatus());
+
+		} catch (Exception e) {
+			ResponseDTO errorResponse = new ResponseDTO(validationResponse.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<>(errorResponse, errorResponse.getHttpStatus());
+		}
 	}
 
-	@GetMapping("ticket/{clientId}/{ticketCode}")
-	public ResponseEntity<ResponseDTO>getTicket(@PathVariable int clientId, @PathVariable int ticketCode)
-			throws InvalidInputException {
-		ResponseDTO responseDTO = requestValidator.IndexRequestValidator(clientId, ticketCode);
-		if (responseDTO.getStatus().equals("Success")) {
-			responseDTO.setObject(ticketService.getTicket(clientId, ticketCode));
+	@PostMapping("/addTicket")
+	public ResponseEntity<ResponseDTO> addTicket(@RequestBody TicketDTO ticketDTO) {
+		ResponseDTO validationResponse = ticketValidator.addTicketValidator(ticketDTO);
+		try {
+			if ("Failed".equals(validationResponse.getStatus())) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResponse);
+			}
+			Ticket ticket = ticketService.saveTicket(ticketDTO);
+			List<Ticket> databaseResponse = List.of(ticket);
+
+			ResponseDTO successResponse = new ResponseDTO("Ticket added successfuly", "Success", databaseResponse, HttpStatus.CREATED);
+			return new ResponseEntity<>(successResponse, successResponse.getHttpStatus());
+
+		} catch (Exception e) {
+			ResponseDTO errorResponse = new ResponseDTO(validationResponse.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<>(errorResponse, errorResponse.getHttpStatus());
 		}
-		return new ResponseEntity<>(responseDTO,responseDTO.getHttpStatus());
 	}
 
-	@GetMapping("getRequiredticktes")
-	public ResponseEntity<ResponseDTO> getTickets(@RequestBody TicketDTO ticketDTO) throws InvalidInputException {
-		ResponseDTO responseDTO = requestValidator.getRequiredValidator(ticketDTO);
-		if (responseDTO.getStatus().equals("Success")) {
-			responseDTO.setObject(ticketService.getTickets(ticketDTO));
-		}
-		return new ResponseEntity<>(responseDTO,responseDTO.getHttpStatus());
-	}
+	@PutMapping("/update")
+	public ResponseEntity<ResponseDTO> updateTicket(@RequestBody TicketDTO ticketDTO) {
+		ResponseDTO validationResponse = ticketValidator.updateTicketValidator(ticketDTO);
+		try {
+			if ("Failed".equals(validationResponse.getStatus())) {
+				return ResponseEntity.badRequest().body(validationResponse);
+			}
+			ticketService.updateTicket((TicketDTO) validationResponse.getObject());
 
-	@PutMapping("update")
-	public ResponseEntity<ResponseDTO> updateTicket(@RequestBody TicketDTO ticketDTO) throws InvalidInputException {
-		ResponseDTO responseDTO = requestValidator.updateRequestValidator(ticketDTO);
-		if (responseDTO.getStatus().equals("Success")) {
-			responseDTO.setObject(ticketService.updateTicket(ticketDTO));
+			ResponseDTO successResponse = new ResponseDTO("Ticket updated successfully", "Success", null, HttpStatus.OK);
+			return new ResponseEntity<>(successResponse, successResponse.getHttpStatus());
+
+		} catch (Exception e) {
+			ResponseDTO errorResponse = new ResponseDTO(validationResponse.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<>(errorResponse, errorResponse.getHttpStatus());
 		}
-		return new ResponseEntity<>(responseDTO,responseDTO.getHttpStatus());
 	}
 
 }
+
+//List<Ticket> tickets = kafkaServices.produceTicket(ticketsDTO).stream()
+//		.map(ticketDTO -> ticketMapper.map(ticketDTO)).collect(Collectors.toList());
+//		responseDTO.setObject(tickets);

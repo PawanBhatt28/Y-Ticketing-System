@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.processing.Pattern;
 
 @Entity
 @Table(name="ticket")
@@ -26,7 +27,7 @@ public class Ticket implements Serializable{
 	private int ticketCode;
 	
 	@Column(name="title")
-	private String title;
+	private String title = "General";
 	
 	@Column(name="last_modified_date")
 	private Timestamp lastModifiedDate;
