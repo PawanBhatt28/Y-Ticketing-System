@@ -9,83 +9,89 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
-import static java.lang.Integer.valueOf;
-import static org.apache.tomcat.util.http.parser.HttpParser.isNumeric;
-
 @Component
 public class TicketValidator {
 
-	Logger logger = LoggerFactory.getLogger(TicketValidator.class);
+    Logger logger = LoggerFactory.getLogger(TicketValidator.class);
 
-	public ResponseDTO fetchTicketValidator(TicketDTO ticketDTO){
-		ResponseDTO responseDTO = new ResponseDTO();
+    private static final String INTEGER_PATTERN = "\\d+";
+    private static final String CLIENT_ID_ERROR = "ClientId should be non-null and an integer.";
+    private static final String TICKET_CODE_ERROR = "TicketCode should be non-null and an integer.";
+    private static final String STATUS_TITLE_ERROR = "Status (max 20 chars) or Title (max 255 chars) is required.";
+    private static final int MAX_STATUS_LENGTH = 20;
+    private static final int MAX_TITLE_LENGTH = 255;
 
-		String clientId = ticketDTO.getClientId();
-		Date startDate = ticketDTO.getStartDate();
-		Date endDate = ticketDTO.getEndDate();
+    public ResponseDTO fetchTicketValidator(TicketDTO ticketDTO) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setStatus("Failed");
+        responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
 
-		if( clientId == null){
-			responseDTO.setMessage("ClientId should be not-null and integer.");
-			responseDTO.setStatus("Failed");
-		}
-		else{
-			if(startDate == null && endDate != null){
-				responseDTO.setMessage("Require at least start date to fetch in a range");
-				responseDTO.setStatus("Failed");
-			}
-		}
-		return responseDTO;
-	}
+        String clientId = ticketDTO.getClientId();
+        String ticketCode = ticketDTO.getTicketCode();
+        Date startDate = ticketDTO.getStartDate();
+        Date endDate = ticketDTO.getEndDate();
 
-	public ResponseDTO addTicketValidator(TicketDTO ticketDTO){
-		ResponseDTO responseDTO = new ResponseDTO();
+        if (!validClientIdOrTicketCode(clientId)) {
+            responseDTO.setMessage(CLIENT_ID_ERROR);
+        } else if (!validClientIdOrTicketCode(ticketCode)) {
+            responseDTO.setMessage(TICKET_CODE_ERROR);
+        } else if (startDate == null && endDate != null) {
+            responseDTO.setMessage("Require at least start date to fetch in a range");
+        }
+        return responseDTO;
+    }
 
-		String clientId = ticketDTO.getClientId();
-		String ticketCode = ticketDTO.getTicketCode();
-		String ticketStatus = ticketDTO.getStatus();
+    public ResponseDTO addTicketValidator(TicketDTO ticketDTO) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setStatus("Failed");
+        responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
 
-		if(clientId == null || !(clientId.trim().matches("\\d+"))){
-			responseDTO.setMessage("ClientId should be not-null and integer.");
-			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
-			responseDTO.setStatus("Failed");
-		}
-		else if(ticketCode == null || !(ticketCode.trim().matches("\\d+"))){
-			responseDTO.setMessage("TicketCode should be not-null and integer.");
-			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
-			responseDTO.setStatus("Failed");
-		}else if(ticketStatus == null ){
-			responseDTO.setMessage("Ticket status is mandatory, it cannot be null");
-			responseDTO.setStatus("Failed");
-		}else{
-			responseDTO.setStatus("Success");
-		}
-		return responseDTO;
-	}
+        String clientId = ticketDTO.getClientId();
+        String ticketCode = ticketDTO.getTicketCode();
+        String ticketStatus = ticketDTO.getStatus();
+        String ticketTitle = ticketDTO.getTitle();
 
-	public ResponseDTO updateTicketValidator(TicketDTO ticketDTO){
-		ResponseDTO responseDTO = new ResponseDTO();
+        if (!validClientIdOrTicketCode(clientId)) {
+            responseDTO.setMessage(CLIENT_ID_ERROR);
+        } else if (!validClientIdOrTicketCode(ticketCode)) {
+            responseDTO.setMessage(TICKET_CODE_ERROR);
+        } else if (!validStatusOrTitle(ticketStatus, null)) {
+            responseDTO.setMessage(STATUS_TITLE_ERROR);
+        } else if (ticketTitle != null && !validStatusOrTitle(null, ticketTitle)) {
+            responseDTO.setMessage(STATUS_TITLE_ERROR);
+        } else {
+            responseDTO.setStatus("Success");
+        }
+        return responseDTO;
+    }
 
-		String clientId = ticketDTO.getClientId();
-		String ticketCode = ticketDTO.getTicketCode();
-		String ticketStatus = ticketDTO.getStatus();
-		String ticketTitle = ticketDTO.getTitle();
+    public ResponseDTO updateTicketValidator(TicketDTO ticketDTO) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setStatus("Failed");
+        responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
 
-		if(clientId == null || !(clientId.trim().matches("\\d+"))){
-			responseDTO.setMessage("ClientId should be not-null and integer.");
-			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
-			responseDTO.setStatus("Failed");
-		}
-		else if(ticketCode == null || !(ticketCode.trim().matches("\\d+"))){
-			responseDTO.setMessage("TicketCode should be not-null and integer.");
-			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
-			responseDTO.setStatus("Failed");
-		}else if (ticketStatus == null && (ticketTitle == null || "general-ticket".equals(ticketTitle))){
-			responseDTO.setMessage("Either status or title is mandatory");
-			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
-			responseDTO.setStatus("Failed");
-		}else{
-			responseDTO.setStatus("Success");
-		}
-		return responseDTO;
-	}
+        String clientId = ticketDTO.getClientId();
+        String ticketCode = ticketDTO.getTicketCode();
+        String ticketStatus = ticketDTO.getStatus();
+        String ticketTitle = ticketDTO.getTitle();
+
+        if (!validClientIdOrTicketCode(clientId)) {
+            responseDTO.setMessage(CLIENT_ID_ERROR);
+        } else if (!validClientIdOrTicketCode(ticketCode)) {
+            responseDTO.setMessage(TICKET_CODE_ERROR);
+        } else if (ticketStatus == null && (ticketTitle == null || "general-ticket".equals(ticketTitle) || ticketTitle.length() < 256)) {
+            responseDTO.setMessage(STATUS_TITLE_ERROR);
+        } else {
+            responseDTO.setStatus("Success");
+        }
+        return responseDTO;
+    }
+
+    private boolean validClientIdOrTicketCode(String id) {
+        return id != null && (id.trim().matches(INTEGER_PATTERN) && Integer.parseInt(id) > 0);
+    }
+
+    private boolean validStatusOrTitle(String status, String title) {
+        return (status != null && status.length() < 20) || (title != null && title.length() < 256);
+    }
 }
