@@ -82,4 +82,10 @@ public class TicketDTO implements Serializable  {
 	public void setPage(int page) {
 		this.page = page;
 	}
+	@Override
+	public String toString() {
+		return "TicketDTO [clientId=" + clientId + ", ticketCode=" + ticketCode + ", title=" + title + ", status="
+				+ status + ", timestamp=" + timestamp + ", limit=" + limit + ", startDate=" + startDate + ", endDate="
+				+ endDate + ", page=" + page + "]";
+	}
 }

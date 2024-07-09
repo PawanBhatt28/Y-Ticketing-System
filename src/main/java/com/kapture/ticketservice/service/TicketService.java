@@ -13,6 +13,7 @@ import com.kapture.ticketservice.constants.Constants;
 import com.kapture.ticketservice.dao.TicketRepository;
 import com.kapture.ticketservice.dto.TicketDTO;
 import com.kapture.ticketservice.entity.Ticket;
+import com.kapture.ticketservice.util.InvalidDataException;
 import com.kapture.ticketservice.util.TicketMapper;
 
 @EnableRedisRepositories
@@ -30,19 +31,21 @@ public class TicketService implements Constants {
 		this.ticketmapper = ticketMapper;
 	}
 
-	public Ticket saveTicket(TicketDTO ticketDTO) {
+	public Object saveTicket(TicketDTO ticketDTO) throws InvalidDataException {
 		Ticket ticket = ticketmapper.map(ticketDTO);
 		ticket.setLastModifiedDate(new Timestamp(System.currentTimeMillis()));
-		Ticket savedTicket = ticketRepository.saveTicket(ticket);
+		Object savedObject = ticketRepository.saveTicket(ticket);
 		String cacheKey = null;
-		//Bug fixed as per the instruction.
-		if (savedTicket != null) {
+		Ticket savedTicket = null;
+		if (savedObject instanceof Ticket) {
+			savedTicket = (Ticket) savedObject;
 			cacheKey = RedisCacheKey + savedTicket.getClientId() + "->" + savedTicket.getTicket_code();
 			RBucket<Ticket> rBucket = redisClient.getBucket(cacheKey);
 			rBucket.set(savedTicket, Duration.ofMinutes(10));
+			return savedTicket;
 		}
+		return savedObject;
 
-		return savedTicket;
 	}
 
 	public Ticket getTicket(int clientId, int ticketCode) {
@@ -53,7 +56,7 @@ public class TicketService implements Constants {
 		ticket = rBucket.get();
 		if (ticket == null)
 			ticket = ticketRepository.getTicketByIndex(clientId, ticketCode);
-
+		
 		return ticket;
 	}
 
@@ -62,12 +65,12 @@ public class TicketService implements Constants {
 		return tickets;
 	}
 
-	public Ticket updateTicket(TicketDTO ticketDTO) {
+	public Ticket updateTicket(TicketDTO ticketDTO) throws InvalidDataException {
 		Ticket updatedTicket = ticketRepository.updateTicket(ticketDTO);
-		//Bug fixed as per the instruction.
+		// Bug fixed as per the instruction.
 		String cacheKey = null;
 		if (updatedTicket != null) {
-			cacheKey = RedisCacheKey + updatedTicket.getClientId() + "->" + updatedTicket.getTicket_code();
+			cacheKey = RedisCacheKey + ticketDTO.getClientId() + "->" + ticketDTO.getTicketCode();
 			RBucket<Ticket> rBucket = redisClient.getBucket(cacheKey);
 			rBucket.set(updatedTicket, Duration.ofMinutes(10));
 		}

@@ -7,6 +7,7 @@ import java.util.List;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import com.kapture.ticketservice.constants.Constants;
 import com.kapture.ticketservice.dto.TicketDTO;
 import com.kapture.ticketservice.entity.Ticket;
+import com.kapture.ticketservice.util.InvalidDataException;
 import com.kapture.ticketservice.util.TicketMapper;
 
 import jakarta.persistence.Query;
@@ -35,7 +37,7 @@ public class TicketDAO implements TicketRepository, Constants {
 		this.ticketMapper = ticketMapper;
 	}
 
-	public Ticket saveTicket(Ticket ticket) {
+	public Ticket saveTicket(Ticket ticket) throws InvalidDataException {
 		Session session = null;
 		Transaction transaction = null;
 		try {
@@ -45,11 +47,12 @@ public class TicketDAO implements TicketRepository, Constants {
 			session.persist(ticket);
 			transaction.commit();
 
-		} catch (Exception e) {
+		} catch (ConstraintViolationException e) {
 			if (transaction != null) {
 				transaction.rollback();
 			}
-			logger.info("Error in saving the ticket!!!", e);
+			logger.info("Error in saving the ticket ! SQL Constraint failed. Duplicate key found");
+			throw new InvalidDataException("Duplicate key found");
 		} finally {
 			session.close();
 		}
@@ -149,7 +152,7 @@ public class TicketDAO implements TicketRepository, Constants {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Ticket updateTicket(TicketDTO ticketDTO) {
+	public Ticket updateTicket(TicketDTO ticketDTO) throws InvalidDataException {
 		Session session = null;
 		Transaction transaction = null;
 		try {
@@ -163,15 +166,17 @@ public class TicketDAO implements TicketRepository, Constants {
 					.setParameter("ticketCode", ticketDTO.getTicketCode())
 					.setParameter("clientId", ticketDTO.getClientId())
 					.setParameter("lastModifiedDate", lastModifiedDate);
-			query.executeUpdate();
+			int updatedTickets = query.executeUpdate();
 			transaction.commit();
-			return ticketMapper.map(ticketDTO);
+			if (updatedTickets != 0)
+				return ticketMapper.map(ticketDTO);
+			return null;
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.rollback();
 			}
 			logger.info("Error in updating the ticket!!!", e);
-			return null;
+			throw new InvalidDataException("Not a valid data");
 		} finally {
 			session.close();
 		}

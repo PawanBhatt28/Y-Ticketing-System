@@ -17,10 +17,10 @@ public class RequestValidator {
 	@SuppressWarnings("unused")
 	public ResponseDTO postRequestValidator(TicketDTO ticketDTO) throws InvalidInputException {
 		ResponseDTO responseDTO = new ResponseDTO();
-		Integer clientId = null;
+		int clientId = -1;
 		String title = null;
 		String status = null;
-		Integer ticketCode = null;
+		int ticketCode = -1;
 		try {
 			clientId = ticketDTO.getClientId();
 			title = ticketDTO.getTitle();
@@ -35,14 +35,14 @@ public class RequestValidator {
 			responseDTO.setMessage("Ticket is not created");
 			responseDTO.setStatus("Failure");
 			logger.info("Invalid Input");
-			throw new InvalidInputException("Not a valid input!!!");
+			throw new InvalidInputException("Invalid ticket present !!!");
 		}
 	}
 
 	@SuppressWarnings("unused")
 	public ResponseDTO IndexRequestValidator(int reqClientId, int reqTicketCode) throws InvalidInputException {
-		Integer clientId = null;
-		Integer ticketCode = null;
+		int clientId = 0;
+		int ticketCode = 0;
 		ResponseDTO responseDTO = new ResponseDTO();
 		try {
 			clientId = reqClientId;
@@ -63,7 +63,7 @@ public class RequestValidator {
 	@SuppressWarnings("unused")
 	public ResponseDTO getRequiredValidator(TicketDTO ticketDTO) throws InvalidInputException {
 		ResponseDTO responseDTO = new ResponseDTO();
-		Integer clientId = null;
+		int clientId = -1;
 		String title = null;
 		String status = null;
 		Integer ticketCode = null;
@@ -88,12 +88,13 @@ public class RequestValidator {
 	}
 
 
+	@SuppressWarnings("unused")
 	public ResponseDTO updateRequestValidator(TicketDTO ticketDTO) throws InvalidInputException {
 		ResponseDTO responseDTO = new ResponseDTO();
-		Integer clientId = null;
+		int clientId = -1;
 		String title = null;
 		String status = null;
-		Integer ticketCode = null;
+		int ticketCode = -1;
 		responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
 		responseDTO.setMessage("Ticket is not Updated");
 		responseDTO.setStatus("Failure");
@@ -102,7 +103,7 @@ public class RequestValidator {
 			title = ticketDTO.getTitle();
 			status = ticketDTO.getStatus();
 			ticketCode = ticketDTO.getTicketCode();
-			if (clientId == null || ticketCode == null || (status == null && title == null))
+			if ((status == null && title == null))
 				return responseDTO;
 			responseDTO.setHttpStatus(HttpStatus.ACCEPTED);
 			responseDTO.setMessage("Ticket is Updated");
