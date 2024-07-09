@@ -13,9 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import com.kapture.ticketservice.dto.ResponseDTO;
 import com.kapture.ticketservice.dto.TicketDTO;
 import com.kapture.ticketservice.entity.Ticket;
-import com.kapture.ticketservice.service.KafkaServices;
 import com.kapture.ticketservice.service.TicketService;
-import com.kapture.ticketservice.util.TicketMapper;
 import com.kapture.ticketservice.validation.TicketValidator;
 
 @RestController
@@ -25,17 +23,14 @@ public class TicketController {
     Logger logger = LoggerFactory.getLogger(TicketController.class);
 
     @Autowired
-    private TicketService ticketService;
+    TicketService ticketService;
     @Autowired
-    private TicketMapper ticketMapper;
-    @Autowired
-    private TicketValidator ticketValidator;
-    @Autowired
-    private KafkaServices kafkaServices;
+    TicketValidator ticketValidator;
 
     @GetMapping("/search")
     public ResponseEntity<ResponseDTO> searchTicket(@RequestBody TicketDTO ticketDTO) {
         logger.info("Starting search ticket execution\n TicketDTO : {}", ticketDTO);
+
         ResponseDTO clientResponse;
         try {
             boolean validationResponse = ticketValidator.fetchTicketValidator(ticketDTO);
@@ -46,6 +41,7 @@ public class TicketController {
         } catch (Exception error){
             clientResponse = new ResponseDTO(error.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
         logger.info("Completed search ticket");
         return new ResponseEntity<>(clientResponse, clientResponse.getHttpStatus());
     }
@@ -53,6 +49,7 @@ public class TicketController {
     @PostMapping("/add")
     public ResponseEntity<ResponseDTO> addTicket(@RequestBody TicketDTO ticketDTO) {
         logger.info("Starting add ticket execution\n TicketDTO : {}", ticketDTO);
+
         ResponseDTO clientResponse;
         try {
             boolean validationResponse = ticketValidator.addTicketValidator(ticketDTO);
@@ -63,6 +60,7 @@ public class TicketController {
         } catch (Exception error){
             clientResponse = new ResponseDTO(error.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
         logger.info("Completed add ticket");
         return new ResponseEntity<>(clientResponse, clientResponse.getHttpStatus());
     }
@@ -70,6 +68,7 @@ public class TicketController {
     @PutMapping("/update")
     public ResponseEntity<ResponseDTO> updateTicket(@RequestBody TicketDTO ticketDTO) {
         logger.info("Starting update ticket execution\n TicketDTO : {}", ticketDTO);
+
         ResponseDTO clientResponse;
         try {
             boolean validationResponse = ticketValidator.updateTicketValidator(ticketDTO);
@@ -80,12 +79,8 @@ public class TicketController {
         } catch (Exception error){
             clientResponse = new ResponseDTO(error.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
         logger.info("Completed updating ticket");
         return new ResponseEntity<>(clientResponse, clientResponse.getHttpStatus());
     }
-
 }
-
-//List<Ticket> tickets = kafkaServices.produceTicket(ticketsDTO).stream()
-//		.map(ticketDTO -> ticketMapper.map(ticketDTO)).collect(Collectors.toList());
-//		responseDTO.setObject(tickets);
