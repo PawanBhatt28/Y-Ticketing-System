@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.processing.Pattern;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name="ticket")

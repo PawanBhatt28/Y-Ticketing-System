@@ -1,5 +1,7 @@
 package com.kapture.ticketservice.dto;
 
+import jakarta.validation.constraints.Size;
+
 import java.io.Serializable;
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -8,7 +10,9 @@ public class TicketDTO implements Serializable  {
 	private static final long serialVersionUID = 1L;
 	String clientId;
 	String ticketCode;
+	@Size(max = 255, message = "Title must be 255 character or less")
 	String title = "general-ticket";
+	@Size(max = 20, message = "Title must be 20 character or less")
 	String status;
 	Timestamp timestamp;
 	int limit;
