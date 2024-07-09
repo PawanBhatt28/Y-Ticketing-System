@@ -73,6 +73,8 @@ public class TicketController {
 			} catch (Exception e) {
 				invalidTickets.add(ticketDTO);
 				responseDTO.setMessage(e.getMessage());
+				responseDTO.setHttpStatus(HttpStatus.MULTI_STATUS);
+				responseDTO.setStatus("May or may not saved check log for more details!");
 			}
 		}
 		if (!invalidTickets.isEmpty())
@@ -101,11 +103,14 @@ public class TicketController {
 		ResponseDTO responseDTO = null;
 		try {
 			responseDTO = requestValidator.getRequiredValidator(ticketDTO);
+			List<Ticket> retrivedTickets = null;
 			if (responseDTO.getStatus().equals("Success")) {
-				responseDTO.setObject(ticketService.getTickets(ticketDTO));
+				retrivedTickets = ticketService.getTickets(ticketDTO);
+				responseDTO.setObject(retrivedTickets);
 			}
-			if (responseDTO.getObject() == null) {
+			if (retrivedTickets == null || retrivedTickets.isEmpty()) {
 				responseDTO.setMessage("No ticket Found");
+				responseDTO.setHttpStatus(HttpStatus.NO_CONTENT);
 			}
 		} catch (Exception e) {
 			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
@@ -125,7 +130,7 @@ public class TicketController {
 				if (updatedTicket != null)
 					responseDTO.setObject(updatedTicket);
 				else {
-					responseDTO.setHttpStatus(HttpStatus.NO_CONTENT);
+					responseDTO.setHttpStatus(HttpStatus.NOT_MODIFIED);
 				}
 			} catch (Exception e) {
 				responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);

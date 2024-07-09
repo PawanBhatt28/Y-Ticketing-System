@@ -87,9 +87,12 @@ public class TicketDAO implements TicketRepository, Constants {
 	@SuppressWarnings("unchecked")
 	public List<Ticket> getTicket(TicketDTO ticketDTO) {
 		Session session = null;
+		int clientId = -1;
+		int ticketCode = -1;
 		try {
 			session = sessionFactory.openSession();
-			Integer clientId = ticketDTO.getClientId();
+			clientId = ticketDTO.getClientId();
+			ticketCode = ticketDTO.getTicketCode();
 			String status = ticketDTO.getStatus();
 			String title = ticketDTO.getTitle();
 			Date startDate = ticketDTO.getStartDate();
@@ -107,6 +110,11 @@ public class TicketDAO implements TicketRepository, Constants {
 				page = ((page - 1) * 10) + 1;
 				limit += page;
 			}
+			if(ticketCode != -1 && clientId != -1) {
+				Ticket ticket = getTicketByIndex(clientId, ticketCode);
+				return List.of(ticket);
+			}
+			
 			StringBuilder hql = new StringBuilder(Constants.select + " WHERE clientId = :clientId");
 			if (startDate != null)
 				startTimeStamp = new Timestamp(startDate.getTime());
@@ -114,17 +122,19 @@ public class TicketDAO implements TicketRepository, Constants {
 				endTimeStamp = new Timestamp(endDate.getTime());
 			if (status != null) {
 				hql.append(" AND t.status = :status");
-
-			} else if (title != null) {
+			}
+			if (title != null) {
 				hql.append(" AND t.title = :title");
-			} else if (startTimeStamp != null && endTimeStamp != null) {
+			}
+			if (startTimeStamp != null && endTimeStamp != null) {
 				hql.append(" AND t.lastModifiedDate BETWEEN :startTimeStamp AND :endTimeStamp");
-			} else if (startTimeStamp != null) {
+			}
+			if (startTimeStamp != null) {
 				hql.append("AND t.lastModifiedDate >= :startTimeStamp");
 			}
 			Query query = session.createQuery(hql.toString(), Ticket.class);
 
-			if (clientId != null) {
+			if (clientId != -1) {
 				query.setParameter("clientId", clientId);
 			}
 
@@ -134,7 +144,8 @@ public class TicketDAO implements TicketRepository, Constants {
 
 			if (title != null) {
 				query.setParameter("title", title);
-			} else if (startTimeStamp != null && endTimeStamp != null) {
+			}
+			if (startTimeStamp != null && endTimeStamp != null) {
 				query.setParameter("startTimeStamp", startTimeStamp);
 				query.setParameter("endTimeStamp", endTimeStamp);
 			} else if (startTimeStamp != null) {
