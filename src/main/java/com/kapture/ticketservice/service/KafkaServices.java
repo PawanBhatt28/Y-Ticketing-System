@@ -30,8 +30,6 @@ public class KafkaServices implements Constants {
 	}
 
 	public List<TicketDTO> produceTicket(List<TicketDTO> ticketsDTO) {
-
-
 		return ticketsDTO.stream().peek(ticket -> {
 			CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(kafkaTopic, ticket);
 			future.whenComplete((result, exception) -> {
