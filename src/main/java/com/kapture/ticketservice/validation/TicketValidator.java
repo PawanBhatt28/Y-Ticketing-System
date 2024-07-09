@@ -22,9 +22,9 @@ public class TicketValidator {
         Date startDate = ticketDTO.getStartDate();
         Date endDate = ticketDTO.getEndDate();
 
-        if (!validClientIdOrTicketCode(clientId)) {
+        if (invalidClientIdOrTicketCode(clientId)) {
             throw new InvalidInputException(Constants.CLIENT_ID_ERROR);
-        } else if (!validClientIdOrTicketCode(ticketCode)) {
+        } else if (invalidClientIdOrTicketCode(ticketCode)) {
             throw new InvalidInputException(Constants.TICKET_CODE_ERROR);
         } else if (startDate == null && endDate != null) {
             throw new InvalidInputException("Require at least start date to fetch in a range");
@@ -42,13 +42,13 @@ public class TicketValidator {
         String ticketStatus = ticketDTO.getStatus();
         String ticketTitle = ticketDTO.getTitle();
 
-        if (!validClientIdOrTicketCode(clientId)) {
+        if (invalidClientIdOrTicketCode(clientId)) {
             throw new InvalidInputException(Constants.CLIENT_ID_ERROR);
-        } else if (!validClientIdOrTicketCode(ticketCode)) {
+        } else if (invalidClientIdOrTicketCode(ticketCode)) {
             throw new InvalidInputException(Constants.TICKET_CODE_ERROR);
-        } else if (!validStatusOrTitle(ticketStatus, null)) {
+        } else if (invalidStatusOrTitle(ticketStatus, null)) {
             throw new InvalidInputException(Constants.STATUS_TITLE_ERROR);
-        } else if (ticketTitle != null && !validStatusOrTitle(null, ticketTitle)) {
+        } else if (ticketTitle != null && invalidStatusOrTitle(null, ticketTitle)) {
             throw new InvalidInputException(Constants.STATUS_TITLE_ERROR);
         }
         logger.info("TicketDTO passed add ticket validation");
@@ -63,9 +63,9 @@ public class TicketValidator {
         String ticketStatus = ticketDTO.getStatus();
         String ticketTitle = ticketDTO.getTitle();
 
-        if (!validClientIdOrTicketCode(clientId)) {
+        if (invalidClientIdOrTicketCode(clientId)) {
             throw new InvalidInputException(Constants.CLIENT_ID_ERROR);
-        } else if (!validClientIdOrTicketCode(ticketCode)) {
+        } else if (invalidClientIdOrTicketCode(ticketCode)) {
             throw new InvalidInputException(Constants.TICKET_CODE_ERROR);
         } else if (ticketStatus == null && (ticketTitle == null || "general-ticket".equals(ticketTitle) || ticketTitle.length() < 256)) {
             throw new InvalidInputException(Constants.STATUS_TITLE_ERROR);
@@ -74,11 +74,11 @@ public class TicketValidator {
         return true;
     }
 
-    private boolean validClientIdOrTicketCode(String id) {
-        return id != null && (id.trim().matches(Constants.INTEGER_PATTERN) && Integer.parseInt(id) > 0);
+    private boolean invalidClientIdOrTicketCode(String id) {
+        return !(id != null && (id.trim().matches(Constants.INTEGER_PATTERN) && Integer.parseInt(id) > 0));
     }
 
-    private boolean validStatusOrTitle(String status, String title) {
-        return (status != null && status.length() < Constants.MAX_STATUS_LENGTH) || (title != null && title.length() < Constants.MAX_TITLE_LENGTH);
+    private boolean invalidStatusOrTitle(String status, String title) {
+        return !((status != null && status.length() < Constants.MAX_STATUS_LENGTH) || (title != null && title.length() < Constants.MAX_TITLE_LENGTH));
     }
 }

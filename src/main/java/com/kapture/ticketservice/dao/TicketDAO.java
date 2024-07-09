@@ -2,12 +2,12 @@ package com.kapture.ticketservice.dao;
 
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import com.kapture.ticketservice.constants.Constants;
 import com.kapture.ticketservice.dto.TicketDTO;
 import com.kapture.ticketservice.entity.Ticket;
+import com.kapture.ticketservice.exception.InvalidInputException;
 import com.kapture.ticketservice.util.TicketMapper;
 
 import jakarta.persistence.Query;
@@ -23,10 +24,8 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
-import static java.lang.Integer.valueOf;
-
 @Repository
-public class TicketDAO implements TicketRepository, Constants {
+public class TicketDAO implements TicketRepository {
 
 	private final Logger logger = LoggerFactory.getLogger(TicketDTO.class);
 
@@ -38,7 +37,7 @@ public class TicketDAO implements TicketRepository, Constants {
 		this.ticketMapper = ticketMapper;
 	}
 
-	public Ticket saveTicket(Ticket ticket) {
+	public Ticket saveTicket(Ticket ticket) throws InvalidInputException {
 		Session session = null;
 		Transaction transaction = null;
 		try {
@@ -48,11 +47,12 @@ public class TicketDAO implements TicketRepository, Constants {
 			session.persist(ticket);
 			transaction.commit();
 
-		} catch (Exception e) {
+		} catch (ConstraintViolationException e) {
 			if (transaction != null) {
 				transaction.rollback();
 			}
-			logger.info("Error in saving the ticket!!!", e);
+			logger.info("Error in saving the ticket ! SQL Constraint failed. Duplicate key found");
+			throw new InvalidInputException("Duplicate key found");
 		} finally {
 			session.close();
 		}
@@ -86,9 +86,13 @@ public class TicketDAO implements TicketRepository, Constants {
 
 	@SuppressWarnings("unchecked")
 	public List<Ticket> getTicket(TicketDTO ticketDTO) {
-		List<Ticket> tickets = new ArrayList<>();
-		try (Session session = sessionFactory.openSession()){
-			Integer clientId = valueOf(ticketDTO.getClientId().trim());
+		Session session = null;
+		int clientId = -1;
+		int ticketCode = -1;
+		try {
+			session = sessionFactory.openSession();
+			clientId = Integer.parseInt(ticketDTO.getClientId());
+			ticketCode = Integer.parseInt(ticketDTO.getTicketCode());
 			String status = ticketDTO.getStatus();
 			String title = ticketDTO.getTitle();
 			Date startDate = ticketDTO.getStartDate();
@@ -106,6 +110,11 @@ public class TicketDAO implements TicketRepository, Constants {
 				page = ((page - 1) * 10) + 1;
 				limit += page;
 			}
+			if(ticketCode != -1 && clientId != -1) {
+				Ticket ticket = getTicketByIndex(clientId, ticketCode);
+				return List.of(ticket);
+			}
+
 			StringBuilder hql = new StringBuilder(Constants.select + " WHERE clientId = :clientId");
 			if (startDate != null)
 				startTimeStamp = new Timestamp(startDate.getTime());
@@ -113,17 +122,19 @@ public class TicketDAO implements TicketRepository, Constants {
 				endTimeStamp = new Timestamp(endDate.getTime());
 			if (status != null) {
 				hql.append(" AND t.status = :status");
-
-			} else if (title != null) {
+			}
+			if (title != null) {
 				hql.append(" AND t.title = :title");
-			} else if (startTimeStamp != null && endTimeStamp != null) {
+			}
+			if (startTimeStamp != null && endTimeStamp != null) {
 				hql.append(" AND t.lastModifiedDate BETWEEN :startTimeStamp AND :endTimeStamp");
-			} else if (startTimeStamp != null) {
+			}
+			if (startTimeStamp != null) {
 				hql.append("AND t.lastModifiedDate >= :startTimeStamp");
 			}
 			Query query = session.createQuery(hql.toString(), Ticket.class);
 
-			if (clientId != null) {
+			if (clientId != -1) {
 				query.setParameter("clientId", clientId);
 			}
 
@@ -133,22 +144,26 @@ public class TicketDAO implements TicketRepository, Constants {
 
 			if (title != null) {
 				query.setParameter("title", title);
-			} else if (startTimeStamp != null && endTimeStamp != null) {
+			}
+			if (startTimeStamp != null && endTimeStamp != null) {
 				query.setParameter("startTimeStamp", startTimeStamp);
 				query.setParameter("endTimeStamp", endTimeStamp);
 			} else if (startTimeStamp != null) {
 				query.setParameter("startTimeStamp", startTimeStamp);
 			}
-			tickets = query.setFirstResult(page).setMaxResults(limit).getResultList();
+			List<Ticket> tickets = query.setFirstResult(page).setMaxResults(limit).getResultList();
 
+			return tickets;
 		} catch (Exception e) {
 			logger.info("Error in fetching the tickets!!!", e);
+			return null;
+		} finally {
+			session.close();
 		}
-		return tickets;
 	}
 
 	@SuppressWarnings("deprecation")
-	public Ticket updateTicket(TicketDTO ticketDTO) {
+	public Ticket updateTicket(TicketDTO ticketDTO) throws InvalidInputException {
 		Session session = null;
 		Transaction transaction = null;
 		try {
@@ -158,19 +173,21 @@ public class TicketDAO implements TicketRepository, Constants {
 			String status = ticketDTO.getStatus();
 			String title = ticketDTO.getTitle();
 			Timestamp lastModifiedDate = new Timestamp(System.currentTimeMillis());
-			query = session.createQuery(update).setParameter("status", status).setParameter("title", title)
+			query = session.createQuery(Constants.update).setParameter("status", status).setParameter("title", title)
 					.setParameter("ticketCode", ticketDTO.getTicketCode())
 					.setParameter("clientId", ticketDTO.getClientId())
 					.setParameter("lastModifiedDate", lastModifiedDate);
-			query.executeUpdate();
+			int updatedTickets = query.executeUpdate();
 			transaction.commit();
-			return ticketMapper.map(ticketDTO);
+			if (updatedTickets != 0)
+				return ticketMapper.map(ticketDTO);
+			return null;
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.rollback();
 			}
 			logger.info("Error in updating the ticket!!!", e);
-			return null;
+			throw new InvalidInputException("Not a valid data");
 		} finally {
 			session.close();
 		}
