@@ -52,7 +52,7 @@ public class TicketController {
 		}
 	}
 
-	@PostMapping("/addTicket")
+	@PostMapping("/add")
 	public ResponseEntity<ResponseDTO> addTicket(@RequestBody TicketDTO ticketDTO) {
 		ResponseDTO validationResponse = ticketValidator.addTicketValidator(ticketDTO);
 		try {

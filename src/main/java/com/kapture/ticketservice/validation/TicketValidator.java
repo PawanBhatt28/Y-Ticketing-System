@@ -20,7 +20,7 @@ public class TicketValidator {
 	public ResponseDTO fetchTicketValidator(TicketDTO ticketDTO){
 		ResponseDTO responseDTO = new ResponseDTO();
 
-		Integer clientId = (ticketDTO.getClientId()) .matches("\\d+") ? valueOf(ticketDTO.getClientId()) :null;
+		String clientId = ticketDTO.getClientId();
 		Date startDate = ticketDTO.getStartDate();
 		Date endDate = ticketDTO.getEndDate();
 
@@ -30,7 +30,7 @@ public class TicketValidator {
 		}
 		else{
 			if(startDate == null && endDate != null){
-				responseDTO.setMessage("Require atleast start date to fetch in a range");
+				responseDTO.setMessage("Require at least start date to fetch in a range");
 				responseDTO.setStatus("Failed");
 			}
 		}
@@ -40,18 +40,18 @@ public class TicketValidator {
 	public ResponseDTO addTicketValidator(TicketDTO ticketDTO){
 		ResponseDTO responseDTO = new ResponseDTO();
 
-//		Integer clientId = (ticketDTO.getClientId().trim()).matches("\\d+") ? valueOf(ticketDTO.getClientId().trim()) :null;
 		String clientId = ticketDTO.getClientId();
 		String ticketCode = ticketDTO.getTicketCode();
-//		Integer ticketCode = (ticketDTO.getTicketCode().trim()).matches("\\d+") ? valueOf(ticketDTO.getTicketCode().trim()) :null;
 		String ticketStatus = ticketDTO.getStatus();
 
 		if(clientId == null || !(clientId.trim().matches("\\d+"))){
 			responseDTO.setMessage("ClientId should be not-null and integer.");
+			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
 			responseDTO.setStatus("Failed");
 		}
 		else if(ticketCode == null || !(ticketCode.trim().matches("\\d+"))){
 			responseDTO.setMessage("TicketCode should be not-null and integer.");
+			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
 			responseDTO.setStatus("Failed");
 		}else if(ticketStatus == null ){
 			responseDTO.setMessage("Ticket status is mandatory, it cannot be null");
@@ -65,21 +65,21 @@ public class TicketValidator {
 	public ResponseDTO updateTicketValidator(TicketDTO ticketDTO){
 		ResponseDTO responseDTO = new ResponseDTO();
 
-		Integer clientId = (ticketDTO.getClientId()) .matches("\\d+") ? valueOf(ticketDTO.getClientId()) :null;
-		Integer ticketCode = (ticketDTO.getTicketCode()).matches("\\d+") ? valueOf(ticketDTO.getTicketCode()) :null;
+		String clientId = ticketDTO.getClientId();
+		String ticketCode = ticketDTO.getTicketCode();
 		String ticketStatus = ticketDTO.getStatus();
 		String ticketTitle = ticketDTO.getTitle();
 
-		if(clientId == null){
+		if(clientId == null || !(clientId.trim().matches("\\d+"))){
 			responseDTO.setMessage("ClientId should be not-null and integer.");
 			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
 			responseDTO.setStatus("Failed");
 		}
-		else if(ticketCode == null){
+		else if(ticketCode == null || !(ticketCode.trim().matches("\\d+"))){
 			responseDTO.setMessage("TicketCode should be not-null and integer.");
 			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
 			responseDTO.setStatus("Failed");
-		}else if (ticketStatus == null && ticketTitle == null){
+		}else if (ticketStatus == null && (ticketTitle == null || "general-ticket".equals(ticketTitle))){
 			responseDTO.setMessage("Either status or title is mandatory");
 			responseDTO.setHttpStatus(HttpStatus.BAD_REQUEST);
 			responseDTO.setStatus("Failed");
