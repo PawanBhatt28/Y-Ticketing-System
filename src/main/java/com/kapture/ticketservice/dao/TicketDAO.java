@@ -2,6 +2,7 @@ package com.kapture.ticketservice.dao;
 
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.Session;
@@ -85,9 +86,8 @@ public class TicketDAO implements TicketRepository, Constants {
 
 	@SuppressWarnings("unchecked")
 	public List<Ticket> getTicket(TicketDTO ticketDTO) {
-		Session session = null;
-		try {
-			session = sessionFactory.openSession();
+		List<Ticket> tickets = new ArrayList<>();
+		try (Session session = sessionFactory.openSession()){
 			Integer clientId = valueOf(ticketDTO.getClientId().trim());
 			String status = ticketDTO.getStatus();
 			String title = ticketDTO.getTitle();
@@ -139,15 +139,12 @@ public class TicketDAO implements TicketRepository, Constants {
 			} else if (startTimeStamp != null) {
 				query.setParameter("startTimeStamp", startTimeStamp);
 			}
-			List<Ticket> tickets = query.setFirstResult(page).setMaxResults(limit).getResultList();
+			tickets = query.setFirstResult(page).setMaxResults(limit).getResultList();
 
-			return tickets;
 		} catch (Exception e) {
 			logger.info("Error in fetching the tickets!!!", e);
-			return null;
-		} finally {
-			session.close();
 		}
+		return tickets;
 	}
 
 	@SuppressWarnings("deprecation")
