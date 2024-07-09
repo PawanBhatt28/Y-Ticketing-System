@@ -2,14 +2,13 @@ package com.kapture.ticketservice.controller;
 
 import java.util.List;
 
-import jakarta.validation.Valid;
+import com.kapture.ticketservice.exception.InvalidInputException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.kapture.ticketservice.dto.ResponseDTO;
 import com.kapture.ticketservice.dto.TicketDTO;
@@ -20,75 +19,70 @@ import com.kapture.ticketservice.util.TicketMapper;
 import com.kapture.ticketservice.validation.TicketValidator;
 
 @RestController
+@RequestMapping("/ticket")
 public class TicketController {
 
-	private TicketService ticketService;
-	private TicketMapper ticketMapper;
-	private TicketValidator ticketValidator;
-	private KafkaServices kafkaServices;
+    Logger logger = LoggerFactory.getLogger(TicketController.class);
 
-	public TicketController(TicketService ticketService, TicketMapper ticketMapper, TicketValidator requestValidator,
-			KafkaServices kafkaServices) {
-		this.ticketService = ticketService;
-		this.ticketMapper = ticketMapper;
-		this.ticketValidator = requestValidator;
-		this.kafkaServices = kafkaServices;
-	}
+    @Autowired
+    private TicketService ticketService;
+    @Autowired
+    private TicketMapper ticketMapper;
+    @Autowired
+    private TicketValidator ticketValidator;
+    @Autowired
+    private KafkaServices kafkaServices;
 
-	@GetMapping("/ticket")
-	public ResponseEntity<ResponseDTO> searchTicket(@RequestBody TicketDTO ticketDTO) {
-		ResponseDTO validationResponse = ticketValidator.fetchTicketValidator(ticketDTO);
-		try {
-			if ("Failed".equals(validationResponse.getStatus())) {
-				return ResponseEntity.badRequest().body(validationResponse);
-			}
-			List<Ticket> tickets = ticketService.getTickets(ticketDTO);
+    @GetMapping("/search")
+    public ResponseEntity<ResponseDTO> searchTicket(@RequestBody TicketDTO ticketDTO) {
+        logger.info("Starting search ticket execution\n TicketDTO : {}", ticketDTO);
+        ResponseDTO clientResponse;
+        try {
+            boolean validationResponse = ticketValidator.fetchTicketValidator(ticketDTO);
+            List<Ticket> tickets = ticketService.getTickets(ticketDTO);
+            clientResponse = new ResponseDTO("Tickets found successfully", "Success", tickets, HttpStatus.OK);
+        } catch (InvalidInputException invalidInputExceptionError) {
+            clientResponse = new ResponseDTO(invalidInputExceptionError.getMessage(), "Failed", ticketDTO, HttpStatus.BAD_REQUEST);
+        } catch (Exception error){
+            clientResponse = new ResponseDTO(error.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        logger.info("Completed search ticket");
+        return new ResponseEntity<>(clientResponse, clientResponse.getHttpStatus());
+    }
 
-			ResponseDTO successResponse = new ResponseDTO("Tickets found successfully", "Success", tickets, HttpStatus.OK);
-			return new ResponseEntity<>(successResponse, successResponse.getHttpStatus());
+    @PostMapping("/add")
+    public ResponseEntity<ResponseDTO> addTicket(@RequestBody TicketDTO ticketDTO) {
+        logger.info("Starting add ticket execution\n TicketDTO : {}", ticketDTO);
+        ResponseDTO clientResponse;
+        try {
+            boolean validationResponse = ticketValidator.addTicketValidator(ticketDTO);
+            List<Ticket> addedTicket = List.of(ticketService.saveTicket(ticketDTO));
+            clientResponse = new ResponseDTO("Tickets added successfully", "Success", addedTicket, HttpStatus.OK);
+        } catch (InvalidInputException invalidInputExceptionError) {
+            clientResponse = new ResponseDTO(invalidInputExceptionError.getMessage(), "Failed", ticketDTO, HttpStatus.BAD_REQUEST);
+        } catch (Exception error){
+            clientResponse = new ResponseDTO(error.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        logger.info("Completed add ticket");
+        return new ResponseEntity<>(clientResponse, clientResponse.getHttpStatus());
+    }
 
-		} catch (Exception e) {
-			ResponseDTO errorResponse = new ResponseDTO(validationResponse.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
-			return new ResponseEntity<>(errorResponse, errorResponse.getHttpStatus());
-		}
-	}
-
-	@PostMapping("/add")
-	public ResponseEntity<ResponseDTO> addTicket(@RequestBody TicketDTO ticketDTO) {
-		ResponseDTO validationResponse = ticketValidator.addTicketValidator(ticketDTO);
-		try {
-			if ("Failed".equals(validationResponse.getStatus())) {
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResponse);
-			}
-			Ticket ticket = ticketService.saveTicket(ticketDTO);
-			List<Ticket> databaseResponse = List.of(ticket);
-
-			ResponseDTO successResponse = new ResponseDTO("Ticket added successfuly", "Success", databaseResponse, HttpStatus.CREATED);
-			return new ResponseEntity<>(successResponse, successResponse.getHttpStatus());
-
-		} catch (Exception e) {
-			ResponseDTO errorResponse = new ResponseDTO(validationResponse.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
-			return new ResponseEntity<>(errorResponse, errorResponse.getHttpStatus());
-		}
-	}
-
-	@PutMapping("/update")
-	public ResponseEntity<ResponseDTO> updateTicket(@RequestBody TicketDTO ticketDTO) {
-		ResponseDTO validationResponse = ticketValidator.updateTicketValidator(ticketDTO);
-		try {
-			if ("Failed".equals(validationResponse.getStatus())) {
-				return ResponseEntity.badRequest().body(validationResponse);
-			}
-			ticketService.updateTicket((TicketDTO) validationResponse.getObject());
-
-			ResponseDTO successResponse = new ResponseDTO("Ticket updated successfully", "Success", null, HttpStatus.OK);
-			return new ResponseEntity<>(successResponse, successResponse.getHttpStatus());
-
-		} catch (Exception e) {
-			ResponseDTO errorResponse = new ResponseDTO(validationResponse.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
-			return new ResponseEntity<>(errorResponse, errorResponse.getHttpStatus());
-		}
-	}
+    @PutMapping("/update")
+    public ResponseEntity<ResponseDTO> updateTicket(@RequestBody TicketDTO ticketDTO) {
+        logger.info("Starting update ticket execution\n TicketDTO : {}", ticketDTO);
+        ResponseDTO clientResponse;
+        try {
+            boolean validationResponse = ticketValidator.updateTicketValidator(ticketDTO);
+            List<Ticket> updatedTicket = List.of(ticketService.updateTicket(ticketDTO));
+            clientResponse = new ResponseDTO("Tickets updated successfully", "Success", updatedTicket, HttpStatus.OK);
+        } catch (InvalidInputException invalidInputExceptionError) {
+            clientResponse = new ResponseDTO(invalidInputExceptionError.getMessage(), "Failed", ticketDTO, HttpStatus.BAD_REQUEST);
+        } catch (Exception error){
+            clientResponse = new ResponseDTO(error.getMessage(), "Failed", ticketDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        logger.info("Completed updating ticket");
+        return new ResponseEntity<>(clientResponse, clientResponse.getHttpStatus());
+    }
 
 }
 
