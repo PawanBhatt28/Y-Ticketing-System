@@ -215,7 +215,7 @@ public class KafkaConfiguration {
 
 ## 🛠 Kafka Controller Endpoints
 
-- **et all registered Kafka consumers**
+- **Get all registered Kafka consumers**
   ```http
   GET /noauth/kafka/consumers
   Response: Set<String>
@@ -232,7 +232,7 @@ public class KafkaConfiguration {
   Response: Map<String, String>
   ```
 
-- **Resume consumers paused for more than X minutes**
+- **Get and resume containers that have been paused for more than X minutes**
   ```http
   POST /noauth/kafka/consumers/resume-paused-containers?timeSincePause={Long:Required}
   Response: Map<String, String>
@@ -250,7 +250,7 @@ public class KafkaConfiguration {
   Response: Map<String, String>
   ```
 
-- **Get metrics for a specific Kafka consumer**
+- **Get all metrics for a specific Kafka consumer**
   ```http
   GET /noauth/kafka/consumers/metric?id={String:required}
   Response: Map<String, Object>
