@@ -111,7 +111,7 @@ public class KafkaConfiguration {
 ```
 
 ### Sample Consumer Code 2
-```
+```java
 import com.kapturecrm.kafka.configuration.DefaultKafkaConfiguration;
 
 public class KafkaConfiguration {
