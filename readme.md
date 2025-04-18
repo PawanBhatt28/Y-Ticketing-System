@@ -215,39 +215,44 @@ public class KafkaConfiguration {
 
 ## 🛠 Kafka Controller Endpoints
 
+- **et all registered Kafka consumers**
+  ```http
+  GET /noauth/kafka/consumers
+  Response: Set<String>
+  ```
 - **Pause all Kafka consumers**
   ```http
-  POST /consumers/pause?containerId={optional}
+  POST /noauth/kafka/consumers/pause?containerId={String:Optional}
   Response: Map<String, String>
   ```
 
 - **Resume all Kafka consumers or a specific consumer**
   ```http
-  POST /consumers/resume?containerId={optional}
+  POST /noauth/kafka/consumers/resume?containerId={String:Optional}
   Response: Map<String, String>
   ```
 
 - **Resume consumers paused for more than X minutes**
   ```http
-  POST /consumers/resume-paused-containers?timeSincePause={Long}
+  POST /noauth/kafka/consumers/resume-paused-containers?timeSincePause={Long:Required}
   Response: Map<String, String>
   ```
 
 - **Get containers paused for more than X minutes**
   ```http
-  GET /consumers/paused-containers?timeSincePause={Long}
+  GET /noauth/kafka/consumers/paused-containers?timeSincePause={Long:Required}
   Response: Map<String, Long>
   ```
 
 - **Get status of all Kafka consumers**
   ```http
-  GET /consumers/status
+  GET /noauth/kafka/consumers/status
   Response: Map<String, String>
   ```
 
 - **Get metrics for a specific Kafka consumer**
   ```http
-  GET /consumers/metric?id={required}
+  GET /noauth/kafka/consumers/metric?id={String:required}
   Response: Map<String, Object>
   ```
 
