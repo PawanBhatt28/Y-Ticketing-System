@@ -13,7 +13,7 @@ To use this Kafka producer in your microservice, add the following dependency to
 <dependency>
     <groupId>com.kapturecrm</groupId>
     <artifactId>kapturecrm-kafka</artifactId>
-    <version>0.0.7</version>
+    <version>{version}</version>
 </dependency>
 ```
 
@@ -22,21 +22,24 @@ To use this Kafka producer in your microservice, add the following dependency to
 ## 📤 Producing Events to Kafka
 
 ### Kafka Producer Configuration Parameters
+**Default (Not Customizable)**
+```
+DELIVERY_TIMEOUT_MS_CONFIG     | {spring.kafka.delivery.timeout.ms:0}
+REQUEST_TIMEOUT_MS_CONFIG      | {spring.kafka.request.timeout.ms:0}
+LINGER_MS_CONFIG               | {spring.kafka.linger.ms:0}
+RETRIES_CONFIG                 | {spring.kafka.retries:0}
+SECURITY_PROTOCOL              | {spring.kafka.security.protocol}
+SASL_MECHANISM                 | {spring.kafka.sasl-mechanism}
+SASL_JAAS_CONFIG               | {spring.kafka.jaas-config}
+MAX_REQUEST_SIZE_CONFIG        | {spring.kafka.max.request.size:15728640}
+INTERCEPTOR_CLASSES_CONFIG     | KafkaProducerInterceptor.class
+```
+**Required (Customizable)**
 
-**Default (Not Customizable)**:
-- `DELIVERY_TIMEOUT_MS_CONFIG`
-- `REQUEST_TIMEOUT_MS_CONFIG`
-- `LINGER_MS_CONFIG`
-- `RETRIES_CONFIG`
-- `SECURITY_PROTOCOL`
-- `SASL_MECHANISM`
-- `SASL_JAAS_CONFIG`
-- `MAX_REQUEST_SIZE_CONFIG`
-- `INTERCEPTOR_CLASSES_CONFIG`: `{KafkaProducerInterceptor}.class`
-
-**Required (Customizable)**:
-- `KEY_SERIALIZER_CLASS_CONFIG`: `{CustomSerializer}.class`
-- `BOOTSTRAP_SERVERS_CONFIG`: `Server_IP`
+```
+KEY_SERIALIZER_CLASS_CONFIG    | {CustomSerializer}.class
+BOOTSTRAP_SERVERS_CONFIG       | Server_IP
+```
 
 ### Sample Producer Code
 ```java
@@ -51,7 +54,7 @@ public class SampleClass {
         String kafkaTopic = "SAMPLE_TOPIC";
         SamplePOJO data = new SamplePOJO();
 
-        // Default Serializer - JsonSerializer.class
+        // Default Serializer - StringSerializer.class
         kafkaProducer.send(kafkaTopic, data, JsonSerializer.class);
     }
 }
@@ -64,18 +67,22 @@ public class SampleClass {
 ### Kafka Consumer Configuration Parameters
 
 **Default (Customizable)**:
-- `BOOTSTRAP_SERVERS_CONFIG`: `kafkaConsumersIp`
-- `KEY_DESERIALIZER_CLASS_CONFIG`: `StringDeserializer.class`
-- `SECURITY_PROTOCOL`
-- `SASL_MECHANISM`
-- `SASL_JAAS_CONFIG`
-- `ENABLE_AUTO_COMMIT_CONFIG`: `"true"`
-- `AUTO_COMMIT_INTERVAL_MS_CONFIG`: `"1000"`
-- `INTERCEPTOR_CLASSES_CONFIG`: `KafkaProducerInterceptor.class`
+```
+BOOTSTRAP_SERVERS_CONFIG        | {spring.kafka.consumer.bootstrap-servers.ip:}
+KEY_DESERIALIZER_CLASS_CONFIG   | StringDeserializer.class
+SECURITY_PROTOCOL               | {spring.kafka.security.protocol}
+SASL_MECHANISM                  | {spring.kafka.sasl-mechanism}
+SASL_JAAS_CONFIG                | {spring.kafka.jaas-config}
+ENABLE_AUTO_COMMIT_CONFIG       | "true"
+AUTO_COMMIT_INTERVAL_MS_CONFIG  | "1000"
+INTERCEPTOR_CLASSES_CONFIG      | KafkaProducerInterceptor.class
+```
 
 **Required**:
-- `GROUP_ID_CONFIG`: `groupId`
-- `VALUE_DESERIALIZER_CLASS_CONFIG`: `{CustomSerializer}.class`
+```
+GROUP_ID_CONFIG                 | groupId
+VALUE_DESERIALIZER_CLASS_CONFIG | {CustomDeserializer}.class
+```
 
 ### Sample Consumer Code 1
 ```java
@@ -104,7 +111,7 @@ public class KafkaConfiguration {
 ```
 
 ### Sample Consumer Code 2
-```java
+```
 import com.kapturecrm.kafka.configuration.DefaultKafkaConfiguration;
 
 public class KafkaConfiguration {
@@ -245,6 +252,3 @@ public class KafkaConfiguration {
   ```
 
 ---
-
-Happy Kafka-ing! 🚀
-
