@@ -38,7 +38,7 @@ INTERCEPTOR_CLASSES_CONFIG     | KafkaProducerInterceptor.class
 
 ```
 KEY_SERIALIZER_CLASS_CONFIG    | {CustomSerializer}.class
-BOOTSTRAP_SERVERS_CONFIG       | Server_IP
+BOOTSTRAP_SERVERS_CONFIG       | {spring.kafka.server.name:primary}
 ```
 
 ### Sample Producer Code
@@ -54,7 +54,8 @@ public class SampleClass {
         String kafkaTopic = "SAMPLE_TOPIC";
         SamplePOJO data = new SamplePOJO();
 
-        // Default Serializer - StringSerializer.class
+        // Default serializer - StringSerializer.class
+        // JsonSerializer.class will work for all types of Java POJO
         kafkaProducer.send(kafkaTopic, data, JsonSerializer.class);
     }
 }
@@ -84,7 +85,7 @@ GROUP_ID_CONFIG                 | groupId
 VALUE_DESERIALIZER_CLASS_CONFIG | {CustomDeserializer}.class
 ```
 
-### Sample Consumer Code 1
+### Sample consumer code 1 : Overriding parameters in configuration
 ```java
 import com.kapturecrm.kafka.configuration.DefaultKafkaConfiguration;
 
@@ -110,7 +111,7 @@ public class KafkaConfiguration {
 }
 ```
 
-### Sample Consumer Code 2
+### Sample consumer code 2 : Default configuration works for you
 ```java
 import com.kapturecrm.kafka.configuration.DefaultKafkaConfiguration;
 
